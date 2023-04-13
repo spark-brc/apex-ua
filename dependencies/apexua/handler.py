@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import shutil
-from likelihoods import (
+from apexua.likelihoods import (
                             gaussianLikelihoodMeasErrorOut, gaussianLikelihoodHomoHeteroDataError, LikelihoodAR1WithC,
                             LikelihoodAR1NoC, generalizedLikelihoodFunction, LaplacianLikelihood, SkewedStudentLikelihoodHomoscedastic,
                             SkewedStudentLikelihoodHeteroscedastic, SkewedStudentLikelihoodHeteroscedasticAdvancedARModel,
@@ -16,6 +16,14 @@ import datetime
 
 
 us_log_path = os.path.dirname(os.path.abspath( __file__ ))
+
+class uaConf(object):
+    def __init__(self, ua_dir):
+        uaconf_df = pd.read_csv(os.path.join(ua_dir, "ua_conf.cfg"))
+
+        return uaconf_df
+
+
 
 class uaInit(object):
     def __init__(self, ui):
