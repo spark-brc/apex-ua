@@ -11,48 +11,50 @@ from apexua.likelihoods import (
 )
 import time
 import subprocess
-import read_output
 import datetime
 
 
 us_log_path = os.path.dirname(os.path.abspath( __file__ ))
 
-class uaConf(object):
-    def __init__(self, ua_dir):
-        uaconf_df = pd.read_csv(os.path.join(ua_dir, "ua_conf.cfg"))
-
-        return uaconf_df
-
-
-
 class uaInit(object):
-    def __init__(self, ui):
-        self.curdir = os.getcwd()
-        self.proj_dir = parm.path_proj
-        self.TxtInout = parm.path_TxtInout
-        os.chdir(self.proj_dir)
-        self.main_dir = os.path.join(self.proj_dir,"UA_Analysis") # create main UA workding directory
-        if not os.path.exists(self.main_dir):
-            os.makedirs(self.main_dir)
-            ui.messages.append(f"'UA_Analysis folder' was created in {self.proj_dir}.")
-        if ui.radioButton_dream.isChecked():
-            self.mod = "DREAM"
-        elif ui.radioButton_mcmc.isChecked():
-            self.mod = "MCMC"
-        elif ui.radioButton_sceua.isChecked():
-            self.mod = "SCEUA"
+    def __init__(self, ua_dir):
+        self.uaconf_df = pd.read_csv(
+            os.path.join(ua_dir, "ua_conf.cfg"),
+            names=["idx", "val"],
+            index_col=0, header=None)
 
-        # NOTE: read all ui setting here then use as initiates
-        if ui.rb_user_obs_day.isChecked():
-            self.time_step = "day"
-        if ui.rb_user_obs_mon.isChecked():
-            self.time_step = "month"
-        self.rchnum01 = ui.txt_sub_1.text()
-        if ui.rb_user_obs_type_rch.isChecked():
-            self.obs_type = "rch"
-        if ui.txt_apex_out_1.currentText().upper()=="RCH-FLOW":
-            self.obs_nam = "Flow(m3/s)"
-        self.obs_path = ui.txt_user_obs_save_path.toPlainText()
+    def read_ua_conf(self):
+        return self.uaconf_df
+
+
+# class uaInit(object):
+#     def __init__(self, ui):
+#         self.curdir = os.getcwd()
+#         self.proj_dir = parm.path_proj
+#         self.TxtInout = parm.path_TxtInout
+#         os.chdir(self.proj_dir)
+#         self.main_dir = os.path.join(self.proj_dir,"UA_Analysis") # create main UA workding directory
+#         if not os.path.exists(self.main_dir):
+#             os.makedirs(self.main_dir)
+#             ui.messages.append(f"'UA_Analysis folder' was created in {self.proj_dir}.")
+#         if ui.radioButton_dream.isChecked():
+#             self.mod = "DREAM"
+#         elif ui.radioButton_mcmc.isChecked():
+#             self.mod = "MCMC"
+#         elif ui.radioButton_sceua.isChecked():
+#             self.mod = "SCEUA"
+
+#         # NOTE: read all ui setting here then use as initiates
+#         if ui.rb_user_obs_day.isChecked():
+#             self.time_step = "day"
+#         if ui.rb_user_obs_mon.isChecked():
+#             self.time_step = "month"
+#         self.rchnum01 = ui.txt_sub_1.text()
+#         if ui.rb_user_obs_type_rch.isChecked():
+#             self.obs_type = "rch"
+#         if ui.txt_apex_out_1.currentText().upper()=="RCH-FLOW":
+#             self.obs_nam = "Flow(m3/s)"
+#         self.obs_path = ui.txt_user_obs_save_path.toPlainText()
 
 
     def ua_worktree_setup(self):
@@ -188,25 +190,6 @@ class uaInit(object):
             run_model = subprocess.Popen(comline, cwd=".")
             # run_model = subprocess.Popen(comline, cwd=".")
             run_model.wait()
-
-
-    def create_ua_sim_obd(self, ui):
-        # read rch
-        read_output.extract_day_stf
-
-    # def print_ua_intro(self, ui):
-    #     with open(os.path.join(self.main_dir, 'ua_log.log'), "r", encoding="utf8") as f:
-    #         for line in f.readlines():
-    #             # font = QFont('Source Sans Pro', 10, QFont.Bold)
-    #             # font.setLetterSpacing(QFont.PercentageSpacing, 100)
-    #             # font.setPixelSize(fontsize)
-
-    #             # ui.messages.insertPlainText(line)
-    #             # print(line,  end='')
-    #             # time.sleep(0.5)
-    #             # QCoreApplication.processEvents()
-    #             font = QFont("monospace")
-    #             ui.messages.setFont(font)
 
 
 

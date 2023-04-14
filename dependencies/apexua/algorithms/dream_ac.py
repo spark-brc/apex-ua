@@ -10,7 +10,7 @@ import time
 import sys
 
 import numpy as np
-from . import _algorithm
+from apexua.algorithms import _algorithm
 
 
 class dream(_algorithm):
