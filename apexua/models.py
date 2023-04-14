@@ -4,9 +4,9 @@ import numpy as np
 from apexua.pars import updatePars
 from distutils.dir_util import copy_tree, remove_tree
 import subprocess
-from apexua import parameter
+from spotpy import parameter
 import datetime
-from apexua.objectivefunctions import rmse
+from spotpy.objectivefunctions import rmse
 from apexua.read_output import create_ua_sim_obd
 
 

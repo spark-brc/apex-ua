@@ -1,5 +1,6 @@
+
 import modules
-from likelihoods import gaussianLikelihoodHomoHeteroDataError as GLHHDE
+from spotpy.likelihoods import gaussianLikelihoodHomoHeteroDataError as GLHHDE
 import multiprocessing
 
 if __name__ == "__main__":

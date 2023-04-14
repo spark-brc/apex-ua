@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 import scipy.stats as stats
-from apexua.objectivefunctions import bias, rsquared, rmse
+from spotpy.objectivefunctions import bias, rsquared, rmse
 from matplotlib.pyplot import cm
 import matplotlib.patches as mpatches
 from statistics import mean
