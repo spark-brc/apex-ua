@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import shutil
-from apexua.likelihoods import (
+from spotpy.likelihoods import (
                             gaussianLikelihoodMeasErrorOut, gaussianLikelihoodHomoHeteroDataError, LikelihoodAR1WithC,
                             LikelihoodAR1NoC, generalizedLikelihoodFunction, LaplacianLikelihood, SkewedStudentLikelihoodHomoscedastic,
                             SkewedStudentLikelihoodHeteroscedastic, SkewedStudentLikelihoodHeteroscedasticAdvancedARModel,
@@ -14,7 +14,6 @@ import subprocess
 import datetime
 
 
-us_log_path = os.path.dirname(os.path.abspath( __file__ ))
 
 class uaInit(object):
     def __init__(self, ua_dir):

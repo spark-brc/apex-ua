@@ -3,9 +3,9 @@ import os
 import pandas as pd
 import numpy as np
 from apexua.models import APEX_setup
-from apexua.likelihoods import gaussianLikelihoodMeasErrorOut as GLMEOUT
-from apexua.likelihoods import gaussianLikelihoodHomoHeteroDataError as GLHHDE
-from apexua.algorithms import dream_ac
+from spotpy.likelihoods import gaussianLikelihoodMeasErrorOut as GLMEOUT
+from spotpy.likelihoods import gaussianLikelihoodHomoHeteroDataError as GLHHDE
+from spotpy.algorithms import dream
 
 
 # def run_dream(ui):
@@ -33,7 +33,7 @@ def run_dream(info, eps=10e-6, nChains=10,
     #     spot_setup, dbname=dbname, dbformat=dbformat, parallel=parallel,
     #     # dbappend=True
     #     )
-    sampler = dream_ac.dream(
+    sampler = dream.dream(
         spot_setup, dbname=dbname, dbformat=dbformat, parallel=parallel,
         dbappend=True
         )
