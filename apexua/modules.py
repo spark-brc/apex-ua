@@ -6,12 +6,10 @@ from apexua.models import APEX_setup
 from apexua.likelihoods import gaussianLikelihoodMeasErrorOut as GLMEOUT
 from apexua.likelihoods import gaussianLikelihoodHomoHeteroDataError as GLHHDE
 from apexua.algorithms import dream_ac
+from apexua import analyzer
 
 
-# def run_dream(ui):
-#     APEX_setup(ui)
-
-def run_dream(info, eps=10e-6, nChains=10, 
+def run_dream(info, 
         dbname="DREAM_apex", dbformat="csv", parallel='mpc', obj_func=GLHHDE):
     # spot_setup = single_setup(GausianLike)
 
@@ -28,6 +26,7 @@ def run_dream(info, eps=10e-6, nChains=10,
     nCr = 3
     runs_after_convergence = 1
     acceptance_test_option = 6
+    eps=10e-6
 
     # sampler = spotpy.algorithms.dream(
     #     spot_setup, dbname=dbname, dbformat=dbformat, parallel=parallel,
@@ -38,8 +37,8 @@ def run_dream(info, eps=10e-6, nChains=10,
         dbappend=True
         )
     r_hat = sampler.sample(
-        1000,
-        nChains,
+        info.loc["NumberRuns", "val"],
+        info.loc["NumberChains", "val"],
         nCr,
         delta,
         c,
@@ -53,5 +52,5 @@ def run_dream(info, eps=10e-6, nChains=10,
         results.to_csv(f"{dbname}.csv", index=False)
         #########################################################
         # Example plot to show the convergence #################
-        results02 = spotpy.analyser.load_csv_results(f"{dbname}")
-        spotpy.analyser.plot_gelman_rubin(results02, r_hat, fig_name="DREAM_r_hat.png")
+        results02 = analyzer.load_csv_results(f"{dbname}")
+        analyzer.plot_gelman_rubin(results02, r_hat, fig_name="DREAM_r_hat.png")
