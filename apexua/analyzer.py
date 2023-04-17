@@ -10,10 +10,10 @@ from statistics import mean
 
 def plot_one_one(df, numcols=1, fsize=8, ):
     fig, ax = plt.subplots(figsize=(6,5))
-    colors = cm.tab20(np.linspace(0, 1, len(df.site_name.unique())))
-    fmax = df.loc[:, ["somsc_sim", "obd"]].max().max()
-    fmin = df.loc[:, ["somsc_sim", "obd"]].min().min()
-    x_val = df.loc[:, "somsc_sim"].tolist()
+    colors = cm.tab20(np.linspace(0, 1, len(df["type"].unique())))
+    fmax = df.loc[:, ["sim", "obd"]].max().max()
+    fmin = df.loc[:, ["sim", "obd"]].min().min()
+    x_val = df.loc[:, "sim"].tolist()
     y_val = df.loc[:, "obd"].tolist()
     correlation_matrix = np.corrcoef(x_val, y_val)
     correlation_xy = correlation_matrix[0,1]
@@ -35,21 +35,23 @@ def plot_one_one(df, numcols=1, fsize=8, ):
             transform=ax.transAxes
             )
     lgds = []
-    for tn, c in zip(df.site_name.unique(), colors):
-        sdf = df.loc[df['site_name'] == tn]
+    for tn, c in zip(df["type"].unique(), colors):
+        sdf = df.loc[df['type'] == tn]
         ax.scatter(
-            sdf.somsc_sim, sdf.obd, 
+            sdf.sim, sdf.obd, 
             color = c, 
             alpha=0.7)
-        rsq_val = round(rsquared(sdf.obd, sdf.somsc_sim), 3)
-        rmse_val = round(rmse(sdf.obd, sdf.somsc_sim), 3)
+        rsq_val = round(rsquared(sdf.obd, sdf.sim), 3)
+        rmse_val = round(rmse(sdf.obd, sdf.sim), 3)
         lgds.append(f"{tn} (rsq:{rsq_val}, rmse:{rmse_val})")
     ax.plot([fmin, fmax], [fmin, fmax], 'k--', alpha=0.2)
-    ax.set_xlabel("Simulated SOC ($g$ $C$ $m^{-2}$)")
-    ax.set_ylabel("Observed SOC ($g$ $C$ $m^{-2}$)")
+    ax.set_xlabel("Simulated")
+    ax.set_ylabel("Observed")
     plt.legend(
         lgds, 
-        bbox_to_anchor=(1.05, 1.05), ncols=numcols, fontsize=fsize)
+        bbox_to_anchor=(1.05, 1.05), 
+        # ncols=numcols, 
+        fontsize=fsize)
     # fig.tight_layout()
     plt.savefig("plot_oneToOne.jpg", dpi=300, bbox_inches="tight")
     plt.show()
@@ -391,32 +393,42 @@ def _compute_total_order(outputs, N, omega):
     return 1 - Dt / V
 
 
-class KFoldAnalyzer(object):
+
+
+
+
+
+
+
+class getResults(object):
     # let's get header
 
-    def __init__(self, proj_dir):
-        self.proj_dir = proj_dir
-        self.main_dir = os.path.join(self.proj_dir, "multi_main")
-        os.chdir(self.proj_dir)
+    def __init__(self, info):
+        self.ua_dir = info.loc["WD", "val"]
+        self.mod = info.loc["Mode", "val"]
+        self.main_dir = os.path.join(self.ua_dir, self.mod)
+        # os.chdir(self.proj_dir)
 
     def par_info(self):
-        par_df = pd.read_csv('selected_pars.csv')
-        par_df = par_df.loc[par_df['select']==1]
-        par_df.reset_index(drop=True, inplace=True)
+        par_df = pd.read_csv(os.path.join(self.ua_dir, 'ua_sel_pars.csv'))
+        # par_df = par_df.loc[par_df['select']==1]
+        # par_df.reset_index(drop=True, inplace=True)
         return par_df
         
     # NOTE: we should get only directories
-    def get_sites(self):
-        # return os.listdir(self.main_dir)
-        return next(os.walk(self.main_dir))[1]
+    # NOTE: this is for national APEX models
+    # def get_sites(self):
+    #     # return os.listdir(self.main_dir)
+    #     return next(os.walk(self.main_dir))[1]
 
     def sim_name(self):
-        df = pd.read_csv(os.path.join(self.proj_dir, "k_fold_con.csv"))
-        df['site_treat_time'] =df['treat_name'] +"_" +df['time'].astype(str)
-        return df['site_treat_time'].tolist()
+        df = pd.read_csv(os.path.join(self.main_dir, "sim_obd.csv"))
+        return df['type_time'].tolist()
 
 
     def get_result_with_header(self, file_path):
+        if file_path is None:
+            file_path = os.path.join(self.main_dir, "DREAM_apex.csv")
         # parameter names
         par_list = self.par_info()['name'].tolist()
         sim_list = self.sim_name()
@@ -431,24 +443,27 @@ class KFoldAnalyzer(object):
         return org_df
 
     
-    def create_kfold_sims_pars(self, file_path, fold_number):
+    def create_sims_pars(self, file_path=None):
+        os.chdir(self.main_dir)
+        if file_path is None:
+            file_path = os.path.join(self.main_dir, "DREAM_apex.csv")
         print("Creating CSV files ...")
-        kfold_df = pd.read_csv(os.path.join(self.proj_dir, "k_fold_con.csv"))
-        kfold_df['site_treat_time'] =kfold_df['treat_name'] +"_" +kfold_df['time'].astype(str)
+        sim_obd_df = pd.read_csv(os.path.join(self.main_dir, "sim_obd.csv"))
+        # kfold_df['site_treat_time'] =kfold_df['treat_name'] +"_" +kfold_df['time'].astype(str)
         df_header = self.get_result_with_header(file_path)
-        df_header.to_csv(f'fold{fold_number:02d}_results.csv', index=False)
-        print(f"...'fold{fold_number:02d}_results.csv' file was created ... passed")
-        dfr = df_header.loc[:, kfold_df['site_treat_time']].T
+        df_header.to_csv(f'DREAM_results.csv', index=False)
+        print(f"...'DREAM_results.csv' file was created ... passed")
+        dfr = df_header.loc[:, sim_obd_df['type_time']].T
         dfr = dfr.add_prefix('sim_')
-        dfr['site_treat_time'] = dfr.index
-        dfinal = kfold_df.merge(dfr, how='inner', on='site_treat_time')
-        dfinal.to_csv(f'fold{fold_number:02d}_sims.csv', index=False)
-        print(f"...'fold{fold_number:02d}_sims.csv' file was created ... passed")
+        dfr['type_time'] = dfr.index
+        dfinal = sim_obd_df.merge(dfr, how='inner', on='type_time')
+        dfinal.to_csv(f'DREAM_sims.csv', index=False)
+        print(f"...'DREAM_sims.csv' file was created ... passed")
         # create pars
         par_list = ["like1"]+ self.par_info()['name'].tolist() + ["chain"]
         pars_df = df_header.loc[:, par_list]
-        pars_df.to_csv(f'fold{fold_number:02d}_pars.csv', index=False)
-        print(f"...'fold{fold_number:02d}_pars.csv' file was created ... passed")
+        pars_df.to_csv(f'DREAM_pars.csv', index=False)
+        print(f"...'DREAM_pars.csv' file was created ... passed")
         print("Creating CSV files ... finished")
 
     def generate_joint_pars(self, posterior_num=100):
@@ -463,8 +478,15 @@ class KFoldAnalyzer(object):
         print(f"join_pars.csv' file was created ... passed")
 
 
-def load_csv_par_result(filename):
-    df = pd.read_csv(filename)
+def load_csv_results():
+    all_r = pd.read_csv("DREAM_results.csv")
+    sim_r = pd.read_csv("DREAM_sims.csv")
+    par_r = pd.read_csv("DREAM_pars.csv")
+    return all_r, sim_r, par_r
+
+
+def load_csv_par_result():
+    df = pd.read_csv("DREAM_pars.csv")
     return df
 
 def load_csv_sim_result(filename):
@@ -489,12 +511,16 @@ def plot_prior_posterior_par_hist(ax, results, par_df, par_id, prior_num, poster
     
     ax.hist(
         results.loc[:prior_num, par_df.loc[par_id, 'name']].values,
-        bins=np.linspace(par_df.loc[par_id, 'min'], par_df.loc[par_id, 'max'], 20),color = "gray", alpha=0.5, density=True
-    )
+        bins=np.linspace(
+            par_df.loc[par_id, 'min'], par_df.loc[par_id, 'max'], 20
+            ),color = "gray", alpha=0.5, density=True
+        )
     ax.hist(
         results.loc[-posterior_num:, par_df.loc[par_id, 'name']].values,
-        bins=np.linspace(par_df.loc[par_id, 'min'], par_df.loc[par_id, 'max'], 20), alpha=0.5, density=True
-    )
+        bins=np.linspace(
+            par_df.loc[par_id, 'min'], par_df.loc[par_id, 'max'], 20
+            ), alpha=0.5, density=True
+            )
     ax.set_ylabel("Density")
     ax.set_xlim(par_df.loc[par_id, 'min'], par_df.loc[par_id, 'max'])
 
@@ -514,35 +540,50 @@ def plot_parameter_trace(ax, result, par_df, par_id):
     ax.set_ylabel(par_df.loc[par_id, 'name'])
     ax.set_ylim(par_df.loc[par_id, 'min'], par_df.loc[par_id, 'max']) 
 
-def plot_parameter_results(par_df, par_results, fold_number, fig_h=25, fig_w=10, prior_num=100, posterior_num=100):
-    fig, ax = plt.subplots(nrows=12, ncols=2)
+def plot_parameter_results(
+        par_df, par_results, fig_h=25, fig_w=10, prior_num=100, posterior_num=100
+        ):
+    fig, ax = plt.subplots(nrows=len(par_df), ncols=2)
     fig.set_figheight(fig_h)
     fig.set_figwidth(fig_w)
     # for par_id in range(5,11):
     for par_id in range(len(par_df)):
         plot_parameter_trace(ax[par_id][0], par_results, par_df, par_id)
-        plot_prior_posterior_par_hist(ax[par_id][1], par_results, par_df, par_id, prior_num, posterior_num)
+        plot_prior_posterior_par_hist(
+            ax[par_id][1], par_results, par_df, par_id, prior_num, posterior_num
+            )
     ax[-1][0].set_xlabel("Iterations")
     ax[-1][1].set_xlabel("Parameter range")
     fig.tight_layout()
     fig.savefig(
-        f"fold{fold_number:02d}_parameter_uncertainty", 
+        f"DREAM_parameter_uncertainty", 
         bbox_inches="tight", dpi=300)
     plt.show()
 
 
-def plot_predicitive_uncertainty(sim_results, fold_number, pair=False, fig_h=7, fig_w=18, prior_num=100, posterior_num=100):
-    fold_num = f"fold{fold_number:02d}"
-    if pair is True:
-        pass
-    else:
-        sim_results = sim_results.loc[sim_results[fold_num]==0]
+def plot_predicitive_uncertainty(
+        sim_results, title=None, pair=False, dot=False, 
+        fig_h=7, fig_w=18, prior_num=100, posterior_num=100,
+        bestfit=False
+        ):
+    """draw plot of predictive uncertainty
+    Args:
+        sim_results (dataframe): load from DREAM_sim.csv
+        title (str, optional): figure name. Defaults to None.
+        pair (bool, optional): not available. Defaults to False.
+        dot (bool, optional): scatter plot. Defaults to False.
+        fig_h (int, optional): figure height. Defaults to 7.
+        fig_w (int, optional): figure width. Defaults to 18.
+        prior_num (int, optional): number of prior simulation used as burned in. Defaults to 100.
+        posterior_num (int, optional): number of posterior simulation after convergence. Defaults to 100.
+        bestfit (bool, optional): show the line of best simulation. Defaults to False.
+    """
     sim_filtered = sim_results.filter(regex='sim_') # get only simulated columns
     sim_filtered = sim_filtered.T
     if pair is True:
         sim_filtered.columns = shorten_colnam(sim_results.loc[:, 'pair_name'].tolist())
     else:
-        sim_filtered.columns = sim_results.loc[:, 'site_treat_time'].tolist()
+        sim_filtered.columns = sim_results.loc[:, 'type_time'].tolist()
     sim_posterior = sim_filtered.iloc[-posterior_num:, :]
     sim_prior = sim_filtered.iloc[:prior_num, :]  
 
@@ -560,15 +601,28 @@ def plot_predicitive_uncertainty(sim_results, fold_number, pair=False, fig_h=7, 
             np.percentile(sim_prior.loc[:, field], 97.5)
         )  # ALl 100 runs after convergence
     label_added = False
-    for i, field in enumerate(sim_prior.columns):
-        values_within = [x for x in sim_prior.loc[:, field] if q5s[i] <= x <= q95s[i]]
-        if not label_added:
-            ax.scatter(
-                [field]*len(values_within), values_within, c='gray', s=20, alpha=0.2,
-                label="Prior Predictive Uncertainty")
-            label_added = True
-        else:
-            ax.scatter([field]*len(values_within), values_within, c='gray', s=20, alpha=0.2,)
+
+    if dot is True:
+        for i, field in enumerate(sim_prior.columns):
+            values_within = [x for x in sim_prior.loc[:, field] if q5s[i] <= x <= q95s[i]]
+            if not label_added:
+                ax.scatter(
+                    [field]*len(values_within), values_within, c='gray', s=20, alpha=0.2,
+                    label="Prior Predictive Uncertainty")
+                label_added = True
+            else:
+                ax.scatter([field]*len(values_within), values_within, c='gray', s=20, alpha=0.2,)
+    else:
+        ax.fill_between(
+            sim_prior.columns,
+            list(q5s),
+            list(q95s),
+            facecolor="dimgrey",
+            zorder=0,
+            alpha=0.5,
+            linewidth=0,
+            label="Prior Predictive Uncertainty",
+        )
     q5s, q25s, q75s, q95s = [], [], [], []
     for field in sim_posterior.columns:
         q5s.append(
@@ -579,26 +633,48 @@ def plot_predicitive_uncertainty(sim_results, fold_number, pair=False, fig_h=7, 
         )  # ALl 100 runs after convergence
     
     label_added = False
-    for i, field in enumerate(sim_posterior.columns):
-        values_within = [x for x in sim_posterior.loc[:, field] if q5s[i] <= x <= q95s[i]]
-        if not label_added:
-            ax.scatter(
-                [field]*len(values_within), values_within, c='b', s=20, alpha=0.2, 
-                label="Posterior Predictive Uncertainty")
-            label_added = True
-        else:
-            ax.scatter(
-                [field]*len(values_within), values_within, c='b', s=20, alpha=0.2)
-            
+    if dot is True:
+        for i, field in enumerate(sim_posterior.columns):
+            values_within = [x for x in sim_posterior.loc[:, field] if q5s[i] <= x <= q95s[i]]
+            if not label_added:
+                ax.scatter(
+                    [field]*len(values_within), values_within, c='b', s=20, alpha=0.2, 
+                    label="Posterior Predictive Uncertainty")
+                label_added = True
+            else:
+                ax.scatter(
+                    [field]*len(values_within), values_within, c='b', s=20, alpha=0.2)
+    else:
+        ax.fill_between(
+            sim_posterior.columns,
+            list(q5s),
+            list(q95s),
+            facecolor="b",
+            zorder=0,
+            alpha=0.3,
+            linewidth=0,
+            label="Posterior Predictive Uncertainty",
+        )                
+    
     if pair is True:
         ax.scatter(
-            sim_posterior.columns, sim_results['SOC_change'].tolist(), 
+            sim_posterior.columns, sim_results['obd'].tolist(), 
             color="red", label="Observed", s=30).set_facecolor("none")
     else:
         ax.scatter(
             sim_posterior.columns, sim_results['obd'].tolist(), 
             color="red", label="Observed", s=30).set_facecolor("none")    
-    
+
+    if bestfit is True:
+        par_results = load_csv_par_result()
+        best_idx, maximumlike = get_maxlikeindex(par_results)
+
+        best_dream_sim = sim_results.loc[:, f"sim_{int(best_idx+1)}"]
+        ax.plot(
+            sim_posterior.columns, best_dream_sim.values.tolist(), linewidth=1, 
+            c='g', label="Best fit - DREAM")       
+
+
     ax.set_ylabel(r"Modeled $\Delta$SOC (g m$^{-2}$)")
     ax.set_xlabel("Simulations")
     ax.tick_params(axis='x', which='major', labelsize=8)
@@ -606,8 +682,38 @@ def plot_predicitive_uncertainty(sim_results, fold_number, pair=False, fig_h=7, 
     # fig.tight_layout()
     ax.margins(x=0.01)
     ax.legend()
-    fig.savefig(f"fold{fold_number:02d}_predictive_uncertainty", bbox_inches="tight", dpi=300)
+    if title is None:
+        title = "predictive_uncertainty"
+    fig.savefig(title, bbox_inches="tight", dpi=300)
     plt.show()    
+
+
+def get_maxlikeindex(results, verbose=True):
+    """
+    Get the maximum objectivefunction of your result array
+
+    :results: Expects an numpy array which should of an index "like" for objectivefunctions
+    :type: array
+
+    :return: Index of the position in the results array with the maximum objectivefunction
+        value and value of the maximum objectivefunction of your result array
+    :rtype: int and float
+    """
+    
+
+    try:
+        likes = results["like1"]
+    except ValueError:
+        likes = results["like1"]
+    maximum = np.nanmax(likes)
+    value = str(round(maximum, 4))
+    text = str("Run number ")
+    index = np.where(likes == maximum)
+    text2 = str(" has the highest objectivefunction with: ")
+    textv = text + str(index[0][0]+1) + text2 + value
+    if verbose:
+        print(textv)
+    return index[0][0], maximum
 
 
 def plot_predicitive_uncertainty_v(sim_results, fold_number, fig_h=18, fig_w=7, prior_num=100, posterior_num=100):
@@ -665,8 +771,8 @@ def plot_predicitive_uncertainty_v(sim_results, fold_number, fig_h=18, fig_w=7, 
     ax.scatter(
         sim_results['obd'].tolist(), sim_posterior.columns,
         color="red", label="Observed", s=30).set_facecolor("none")
-    ax.set_xlabel("Soil organic carbon (g C m$^{-2}$)")
-    ax.set_ylabel("Simulations")
+    # ax.set_xlabel("Soil organic carbon (g C m$^{-2}$)")
+    # ax.set_ylabel("Simulations")
     ax.tick_params(axis='y', which='major', labelsize=8)
     ax.invert_yaxis()
     # plt.xticks(rotation=90)

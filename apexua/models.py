@@ -47,43 +47,6 @@ class APEX_setup(object):
             self.mpi_size = comm.Get_size()
             self.mpi_rank = comm.Get_rank()
 
-        # NOTE: read all ui setting here then use as initiates
-        # if ui.rb_user_obs_day.isChecked():
-        #     self.time_step = "day"
-        # if ui.rb_user_obs_mon.isChecked():
-        #     self.time_step = "month"
-        # self.rchnum = ui.txt_sub_1.text()
-        # if ui.rb_user_obs_type_rch.isChecked():
-        #     self.obs_type = "rch"
-        # if ui.txt_apex_out_1.currentText().upper()=="RCH-FLOW":
-        #     self.obs_nam = "Flow(m3/s)"
-        # self.obs_path = ui.txt_user_obs_save_path.toPlainText()
-        # self.ui = ui
-        # APEXCUTE_path_dict = self.dirs_and_paths()
-        # os.chdir(APEXCUTE_path_dict['apexcute'])
-        # print(inspect.getmodule(ui).__dir__)
-        self.time_step = "day"
-
-
-        
-    # def load_sim(self, wd):
-    #     stdate_, eddate_, ptcode = self.get_start_end_step()
-    #     if ptcode == 6 and self.time_step == "day":
-    #         sim_df = read_output.extract_day_stf()
-    #     if ptcode == 6 and self.time_step == "month":
-    #         sim_df = read_output.extract_day_stf(wd)
-    #         print('nope!')
-    #         sim_df = sim_df.resample('M').mean()
-    #         sim_df['year'] = sim_df.index.year
-    #         sim_df['month'] = sim_df.index.month
-    #         sim_df['time'] = sim_df['year'].astype(str) + "-" + sim_df['month'].astype(str)
-    #     if ptcode == 3 and self.time_step == "month":
-    #         sim_df = read_output.extract_mon_stf(wd)
-    #     print(sim_df)
-    #     return sim_df
-    
-
-
     def load_ua_pars(self):
         pars_df = pd.read_csv(os.path.join(self.ua_dir, "ua_sel_pars.csv"))
         return pars_df

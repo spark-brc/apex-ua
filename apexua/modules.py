@@ -5,21 +5,18 @@ import numpy as np
 from apexua.models import APEX_setup
 from apexua.likelihoods import gaussianLikelihoodMeasErrorOut as GLMEOUT
 from apexua.likelihoods import gaussianLikelihoodHomoHeteroDataError as GLHHDE
-from apexua.algorithms import dream_ac
+from apexua.algorithms import dream_ac, fast_ac
 from apexua import analyzer
 
 
-# def run_dream(ui):
-#     APEX_setup(ui)
-
-def run_dream(info, eps=10e-6, nChains=54, 
+def run_dream(info, 
         dbname="DREAM_apex", dbformat="csv", parallel='mpc', obj_func=GLHHDE):
     # spot_setup = single_setup(GausianLike)
 
     # Bayesian algorithms should be run with a likelihood function
     # obj_func = ua.likelihoods.gaussianLikelihoodHomoHeteroDataError
     # obj_func = spotpy.likelihoods.gaussianLikelihoodMeasErrorOut
-    spot_setup = APEX_setup(info, parallel=parallel, obj_func=obj_func)
+    apex_model = APEX_setup(info, parallel=parallel, obj_func=obj_func)
     # Select seven chains and set the Gelman-Rubin convergence limit
     delta = 3
     convergence_limit = 1.2
@@ -29,18 +26,19 @@ def run_dream(info, eps=10e-6, nChains=54,
     nCr = 3
     runs_after_convergence = 1
     acceptance_test_option = 6
+    eps=10e-6
 
     # sampler = spotpy.algorithms.dream(
-    #     spot_setup, dbname=dbname, dbformat=dbformat, parallel=parallel,
+    #     apex_model, dbname=dbname, dbformat=dbformat, parallel=parallel,
     #     # dbappend=True
     #     )
     sampler = dream_ac.dream(
-        spot_setup, dbname=dbname, dbformat=dbformat, parallel=parallel,
+        apex_model, dbname=dbname, dbformat=dbformat, parallel=parallel,
         dbappend=True
         )
     r_hat = sampler.sample(
-        10000,
-        nChains,
+        int(info.loc["NumberRuns", "val"]),
+        int(info.loc["NumberChains", "val"]),
         nCr,
         delta,
         c,
