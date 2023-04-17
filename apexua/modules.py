@@ -5,7 +5,7 @@ import numpy as np
 from apexua.models import APEX_setup
 from apexua.likelihoods import gaussianLikelihoodMeasErrorOut as GLMEOUT
 from apexua.likelihoods import gaussianLikelihoodHomoHeteroDataError as GLHHDE
-from apexua.algorithms import dream_ac
+from apexua.algorithms import dream_ac, fast_ac
 from apexua import analyzer
 
 
@@ -16,7 +16,7 @@ def run_dream(info,
     # Bayesian algorithms should be run with a likelihood function
     # obj_func = ua.likelihoods.gaussianLikelihoodHomoHeteroDataError
     # obj_func = spotpy.likelihoods.gaussianLikelihoodMeasErrorOut
-    spot_setup = APEX_setup(info, parallel=parallel, obj_func=obj_func)
+    apex_model = APEX_setup(info, parallel=parallel, obj_func=obj_func)
     # Select seven chains and set the Gelman-Rubin convergence limit
     delta = 3
     convergence_limit = 1.2
@@ -29,16 +29,16 @@ def run_dream(info,
     eps=10e-6
 
     # sampler = spotpy.algorithms.dream(
-    #     spot_setup, dbname=dbname, dbformat=dbformat, parallel=parallel,
+    #     apex_model, dbname=dbname, dbformat=dbformat, parallel=parallel,
     #     # dbappend=True
     #     )
     sampler = dream_ac.dream(
-        spot_setup, dbname=dbname, dbformat=dbformat, parallel=parallel,
+        apex_model, dbname=dbname, dbformat=dbformat, parallel=parallel,
         dbappend=True
         )
     r_hat = sampler.sample(
-        info.loc["NumberRuns", "val"],
-        info.loc["NumberChains", "val"],
+        int(info.loc["NumberRuns", "val"]),
+        int(info.loc["NumberChains", "val"]),
         nCr,
         delta,
         c,
@@ -47,10 +47,24 @@ def run_dream(info,
         runs_after_convergence,
         acceptance_test_option,
     )
-    if dbformat == 'ram':
-        results = pd.DataFrame(sampler.getdata())
-        results.to_csv(f"{dbname}.csv", index=False)
-        #########################################################
-        # Example plot to show the convergence #################
-        results02 = analyzer.load_csv_results(f"{dbname}")
-        analyzer.plot_gelman_rubin(results02, r_hat, fig_name="DREAM_r_hat.png")
+    # if dbformat == 'csv':
+    #     results = pd.DataFrame(sampler.getdata())
+    #     results.to_csv(f"{dbname}.csv", index=False)
+    #     #########################################################
+    #     # Example plot to show the convergence #################
+    #     results02 = analyzer.load_csv_results(f"{dbname}")
+    #     analyzer.plot_gelman_rubin(results02, r_hat, fig_name="DREAM_r_hat.png")
+
+
+## it is going to be interesting
+def run_fast(
+        info, 
+        dbname="FAST_apex", dbformat="csv", parallel='mpc', obj_func=None):
+    apex_model = APEX_setup(
+        info, parallel=parallel, obj_func=obj_func)
+    # Select number of maximum allowed repetitions
+    sampler = fast_ac.fast(
+            apex_model, dbname=dbname, 
+            dbformat=dbformat, parallel=parallel
+            )
+    sampler.sample(int(info.loc["NumberRuns", "val"]))

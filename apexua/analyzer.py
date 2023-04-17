@@ -443,7 +443,7 @@ class getResults(object):
         return org_df
 
     
-    def create_kfold_sims_pars(self, file_path=None):
+    def create_sims_pars(self, file_path=None):
         os.chdir(self.main_dir)
         if file_path is None:
             file_path = os.path.join(self.main_dir, "DREAM_apex.csv")
@@ -478,8 +478,15 @@ class getResults(object):
         print(f"join_pars.csv' file was created ... passed")
 
 
-def load_csv_par_result(filename):
-    df = pd.read_csv(filename)
+def load_csv_results():
+    all_r = pd.read_csv("DREAM_results.csv")
+    sim_r = pd.read_csv("DREAM_sims.csv")
+    par_r = pd.read_csv("DREAM_pars.csv")
+    return all_r, sim_r, par_r
+
+
+def load_csv_par_result():
+    df = pd.read_csv("DREAM_pars.csv")
     return df
 
 def load_csv_sim_result(filename):
@@ -554,12 +561,23 @@ def plot_parameter_results(
     plt.show()
 
 
-def plot_predicitive_uncertainty(sim_results, fold_number, pair=False, fig_h=7, fig_w=18, prior_num=100, posterior_num=100):
-    # fold_num = f"fold{fold_number:02d}"
-    # if pair is True:
-    #     pass
-    # else:
-    #     sim_results = sim_results.loc[sim_results[fold_num]==0]
+def plot_predicitive_uncertainty(
+        sim_results, title=None, pair=False, dot=False, 
+        fig_h=7, fig_w=18, prior_num=100, posterior_num=100,
+        bestfit=False
+        ):
+    """draw plot of predictive uncertainty
+    Args:
+        sim_results (dataframe): load from DREAM_sim.csv
+        title (str, optional): figure name. Defaults to None.
+        pair (bool, optional): not available. Defaults to False.
+        dot (bool, optional): scatter plot. Defaults to False.
+        fig_h (int, optional): figure height. Defaults to 7.
+        fig_w (int, optional): figure width. Defaults to 18.
+        prior_num (int, optional): number of prior simulation used as burned in. Defaults to 100.
+        posterior_num (int, optional): number of posterior simulation after convergence. Defaults to 100.
+        bestfit (bool, optional): show the line of best simulation. Defaults to False.
+    """
     sim_filtered = sim_results.filter(regex='sim_') # get only simulated columns
     sim_filtered = sim_filtered.T
     if pair is True:
@@ -583,15 +601,28 @@ def plot_predicitive_uncertainty(sim_results, fold_number, pair=False, fig_h=7, 
             np.percentile(sim_prior.loc[:, field], 97.5)
         )  # ALl 100 runs after convergence
     label_added = False
-    for i, field in enumerate(sim_prior.columns):
-        values_within = [x for x in sim_prior.loc[:, field] if q5s[i] <= x <= q95s[i]]
-        if not label_added:
-            ax.scatter(
-                [field]*len(values_within), values_within, c='gray', s=20, alpha=0.2,
-                label="Prior Predictive Uncertainty")
-            label_added = True
-        else:
-            ax.scatter([field]*len(values_within), values_within, c='gray', s=20, alpha=0.2,)
+
+    if dot is True:
+        for i, field in enumerate(sim_prior.columns):
+            values_within = [x for x in sim_prior.loc[:, field] if q5s[i] <= x <= q95s[i]]
+            if not label_added:
+                ax.scatter(
+                    [field]*len(values_within), values_within, c='gray', s=20, alpha=0.2,
+                    label="Prior Predictive Uncertainty")
+                label_added = True
+            else:
+                ax.scatter([field]*len(values_within), values_within, c='gray', s=20, alpha=0.2,)
+    else:
+        ax.fill_between(
+            sim_prior.columns,
+            list(q5s),
+            list(q95s),
+            facecolor="dimgrey",
+            zorder=0,
+            alpha=0.5,
+            linewidth=0,
+            label="Prior Predictive Uncertainty",
+        )
     q5s, q25s, q75s, q95s = [], [], [], []
     for field in sim_posterior.columns:
         q5s.append(
@@ -602,17 +633,29 @@ def plot_predicitive_uncertainty(sim_results, fold_number, pair=False, fig_h=7, 
         )  # ALl 100 runs after convergence
     
     label_added = False
-    for i, field in enumerate(sim_posterior.columns):
-        values_within = [x for x in sim_posterior.loc[:, field] if q5s[i] <= x <= q95s[i]]
-        if not label_added:
-            ax.scatter(
-                [field]*len(values_within), values_within, c='b', s=20, alpha=0.2, 
-                label="Posterior Predictive Uncertainty")
-            label_added = True
-        else:
-            ax.scatter(
-                [field]*len(values_within), values_within, c='b', s=20, alpha=0.2)
-            
+    if dot is True:
+        for i, field in enumerate(sim_posterior.columns):
+            values_within = [x for x in sim_posterior.loc[:, field] if q5s[i] <= x <= q95s[i]]
+            if not label_added:
+                ax.scatter(
+                    [field]*len(values_within), values_within, c='b', s=20, alpha=0.2, 
+                    label="Posterior Predictive Uncertainty")
+                label_added = True
+            else:
+                ax.scatter(
+                    [field]*len(values_within), values_within, c='b', s=20, alpha=0.2)
+    else:
+        ax.fill_between(
+            sim_posterior.columns,
+            list(q5s),
+            list(q95s),
+            facecolor="b",
+            zorder=0,
+            alpha=0.3,
+            linewidth=0,
+            label="Posterior Predictive Uncertainty",
+        )                
+    
     if pair is True:
         ax.scatter(
             sim_posterior.columns, sim_results['obd'].tolist(), 
@@ -621,7 +664,17 @@ def plot_predicitive_uncertainty(sim_results, fold_number, pair=False, fig_h=7, 
         ax.scatter(
             sim_posterior.columns, sim_results['obd'].tolist(), 
             color="red", label="Observed", s=30).set_facecolor("none")    
-    
+
+    if bestfit is True:
+        par_results = load_csv_par_result()
+        best_idx, maximumlike = get_maxlikeindex(par_results)
+
+        best_dream_sim = sim_results.loc[:, f"sim_{int(best_idx+1)}"]
+        ax.plot(
+            sim_posterior.columns, best_dream_sim.values.tolist(), linewidth=1, 
+            c='g', label="Best fit - DREAM")       
+
+
     ax.set_ylabel(r"Modeled $\Delta$SOC (g m$^{-2}$)")
     ax.set_xlabel("Simulations")
     ax.tick_params(axis='x', which='major', labelsize=8)
@@ -629,8 +682,38 @@ def plot_predicitive_uncertainty(sim_results, fold_number, pair=False, fig_h=7, 
     # fig.tight_layout()
     ax.margins(x=0.01)
     ax.legend()
-    fig.savefig(f"fold{fold_number:02d}_predictive_uncertainty", bbox_inches="tight", dpi=300)
+    if title is None:
+        title = "predictive_uncertainty"
+    fig.savefig(title, bbox_inches="tight", dpi=300)
     plt.show()    
+
+
+def get_maxlikeindex(results, verbose=True):
+    """
+    Get the maximum objectivefunction of your result array
+
+    :results: Expects an numpy array which should of an index "like" for objectivefunctions
+    :type: array
+
+    :return: Index of the position in the results array with the maximum objectivefunction
+        value and value of the maximum objectivefunction of your result array
+    :rtype: int and float
+    """
+    
+
+    try:
+        likes = results["like1"]
+    except ValueError:
+        likes = results["like1"]
+    maximum = np.nanmax(likes)
+    value = str(round(maximum, 4))
+    text = str("Run number ")
+    index = np.where(likes == maximum)
+    text2 = str(" has the highest objectivefunction with: ")
+    textv = text + str(index[0][0]+1) + text2 + value
+    if verbose:
+        print(textv)
+    return index[0][0], maximum
 
 
 def plot_predicitive_uncertainty_v(sim_results, fold_number, fig_h=18, fig_w=7, prior_num=100, posterior_num=100):
@@ -688,8 +771,8 @@ def plot_predicitive_uncertainty_v(sim_results, fold_number, fig_h=18, fig_w=7, 
     ax.scatter(
         sim_results['obd'].tolist(), sim_posterior.columns,
         color="red", label="Observed", s=30).set_facecolor("none")
-    ax.set_xlabel("Soil organic carbon (g C m$^{-2}$)")
-    ax.set_ylabel("Simulations")
+    # ax.set_xlabel("Soil organic carbon (g C m$^{-2}$)")
+    # ax.set_ylabel("Simulations")
     ax.tick_params(axis='y', which='major', labelsize=8)
     ax.invert_yaxis()
     # plt.xticks(rotation=90)
