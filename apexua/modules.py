@@ -54,8 +54,15 @@ def run_dream(info,
     #     # Example plot to show the convergence #################
     #     results02 = analyzer.load_csv_results(f"{dbname}")
     #     analyzer.plot_gelman_rubin(results02, r_hat, fig_name="DREAM_r_hat.png")
-
-
+    np.savetxt("r_hat.csv", r_hat, delimiter=",")
+    if dbformat == "ram":
+        results = pd.DataFrame(sampler.getdata())
+        results.to_csv(f"{dbname}.csv", index=False)
+        #########################################################
+        # Example plot to show the convergence #################
+        results02 = analyzer.load_csv_results(f"{dbname}")
+        analyzer.plot_gelman_rubin(results02, r_hat, fig_name="DREAM_r_hat.png")
+        
 ## it is going to be interesting
 def run_fast(
         info, 
@@ -70,3 +77,4 @@ def run_fast(
     sampler.sample(int(info.loc["NumberRuns", "val"]))
 
     
+
