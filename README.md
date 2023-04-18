@@ -36,8 +36,11 @@ To execute jupyter notebook, we need the Miniconda environment.
 conda install -c conda-forge mamba
 ```  
 
-- Using the [cd](https://www.computerhope.com/issues/chusedos.htm) command in the Miniconda DOS box, navigate to the location where you have `environment.yml` the file and type: `mamba env create -f environment.yml` and hit ENTER.
-
+- Using the [cd](https://www.computerhope.com/issues/chusedos.htm) command in the Miniconda DOS box, navigate to the location where you have `environment.yml` the file and type: 
+```bash
+mamba env create -f environment.yml
+``` 
+and hit ENTER.
 
 After your virtual environment setup is complete, change the environment to `apex-ua`:  
 ```bash
