@@ -31,7 +31,11 @@ To execute jupyter notebook, we need the Miniconda environment.
 
 #### 2. Set Environment and install libraries:
 - After installation, go to the START menu and select "Miniconda Prompt" to open a DOS box.
-- Type the following command: conda install -c conda-forge mamba
+- Type the following command:
+```bash
+conda install -c conda-forge mamba
+```  
+
 - Using the [cd](https://www.computerhope.com/issues/chusedos.htm) command in the Miniconda DOS box, navigate to the location where you have `environment.yml` the file and type: `mamba env create -f environment.yml` and hit ENTER.
 
 
