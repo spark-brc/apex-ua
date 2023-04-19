@@ -54,7 +54,7 @@ def run_dream(info,
     #     # Example plot to show the convergence #################
     #     results02 = analyzer.load_csv_results(f"{dbname}")
     #     analyzer.plot_gelman_rubin(results02, r_hat, fig_name="DREAM_r_hat.png")
-    np.savetxt("r_hat.csv", r_hat, delimiter=",")
+    np.savetxt("r_hat.csv", r_hat, delimiter=",", fmt='%.7e')
     if dbformat == "ram":
         results = pd.DataFrame(sampler.getdata())
         results.to_csv(f"{dbname}.csv", index=False)
