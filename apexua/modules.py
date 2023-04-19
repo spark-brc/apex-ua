@@ -12,7 +12,7 @@ from apexua import analyzer
 def run_dream(info, 
         dbname="DREAM_apex", dbformat="csv", parallel='mpc', obj_func=GLHHDE):
     # spot_setup = single_setup(GausianLike)
-    delete_old_files(info)
+    delete_obsolete_files(info)
     # Bayesian algorithms should be run with a likelihood function
     # obj_func = ua.likelihoods.gaussianLikelihoodHomoHeteroDataError
     # obj_func = spotpy.likelihoods.gaussianLikelihoodMeasErrorOut
@@ -77,10 +77,12 @@ def run_fast(
     sampler.sample(int(info.loc["NumberRuns", "val"]))
 
 
-def delete_old_files(info):
-    if os.path.isfile(os.path.join(info.loc["WD", "val"], "DREAM_apex.csv")):
+def delete_obsolete_files(info):
+    if os.path.isfile(
+        os.path.join(info.loc["WD", "val"], info.loc["Mode", "val"], "DREAM_apex.csv")
+        ):
         print("found obsolete outputs ...")
-        os.remove(os.path.join(info.loc["WD", "val"], "DREAM_apex.csv"))
+        os.remove(os.path.join(info.loc["WD", "val"], info.loc["Mode", "val"], "DREAM_apex.csv"))
         print("...deleted ...")
 
 
