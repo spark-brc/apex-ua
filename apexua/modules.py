@@ -78,7 +78,7 @@ def run_fast(
 
 
 def delete_old_files(info):
-    if os.path.file(os.path.join(info.loc["WD", "val"], "DREAM_apex.csv")):
+    if os.path.isfile(os.path.join(info.loc["WD", "val"], "DREAM_apex.csv")):
         print("found obsolete outputs ...")
         os.remove(os.path.join(info.loc["WD", "val"], "DREAM_apex.csv"))
         print("...deleted ...")
