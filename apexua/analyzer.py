@@ -217,6 +217,35 @@ def plot_one_one2(df, numcols=1, fsize=8, ):
     plt.show()
 
 
+def plot_gelman_rubin(legend_cols=1, fig_name="gelman_rub.png"):
+    """Input:  List of R_hat values of chains (see Gelman & Rubin 1992)
+    Output: Plot as seen for e.g. in (Sadegh and Vrugt 2014)"""
+
+    raw_results = load_raw_results("DREAM_results")
+    r_hat_values = pd.read_csv("r_hat.csv", header=None)
+
+
+    fig = plt.figure(figsize=(9, 6))
+    ax1 = plt.subplot(2, 1, 1)
+    for i in range(int(max(raw_results["chain"])) + 1):
+        index = np.where(raw_results["chain"] == i)
+        ax1.plot(raw_results["like1"][index], label="Chain " + str(i + 1))
+    ax1.set_ylabel("Likelihood value")
+    ax1.legend(ncols=legend_cols, bbox_to_anchor=(1, 1), fontsize=8)
+
+    ax2 = plt.subplot(2, 1, 2)
+    r_hat = np.array(r_hat_values)
+    ax2.plot([1.2] * len(r_hat), "k--")
+    for i in range(len(r_hat[0])):
+        ax2.plot(r_hat[:, i], label="x" + str(i + 1))
+    ax2.set_yscale("log", nonpositive="clip")
+    ax2.set_ylabel("R$^d$ - convergence diagnostic")
+    ax2.set_xlabel("Number of Iterations")
+    ax2.legend(ncols=legend_cols, bbox_to_anchor=(1, 1), fontsize=8)
+    fig.savefig(fig_name, dpi=150, bbox_inches="tight")
+
+
+
 def plot_ci_manual(t, s_err, n, x, x2, y2, ax=None):
     """Return an axes of confidence bands using a simple approach.
     

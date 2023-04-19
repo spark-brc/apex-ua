@@ -10,7 +10,7 @@ from apexua import analyzer
 
 
 def run_dream(info, 
-        dbname="DREAM_apex", dbformat="csv", parallel='mpc', obj_func=GLHHDE):
+        dbname="DREAM_apex", dbformat="csv", parallel='mpc', obj_func=GLMEOUT):
     # spot_setup = single_setup(GausianLike)
     delete_obsolete_files(info)
     # Bayesian algorithms should be run with a likelihood function
