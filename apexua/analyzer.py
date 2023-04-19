@@ -394,12 +394,6 @@ def _compute_total_order(outputs, N, omega):
 
 
 
-
-
-
-
-
-
 class getResults(object):
     # let's get header
 
@@ -496,6 +490,32 @@ def load_csv_sim_result(filename):
 def load_csv_pair_result(filename):
     df = pd.read_csv(filename)
     return df
+
+
+def load_raw_results(filename, usecols=None):
+    """
+    Get an array of your results in the given file.
+
+    :filename: Expects an available filename, without the csv, in your working directory
+    :type: str
+
+    :return: Result array
+    :rtype: array
+    """
+    if usecols == None:
+        return np.genfromtxt(
+            filename + ".csv", delimiter=",", names=True, invalid_raise=False
+        )
+    else:
+        return np.genfromtxt(
+            filename + ".csv",
+            delimiter=",",
+            names=True,
+            skip_footer=1,
+            invalid_raise=False,
+            usecols=usecols,
+        )[1:]
+
 
 
 def plot_prior_posterior_par_hist(ax, results, par_df, par_id, prior_num, posterior_num):
@@ -675,7 +695,7 @@ def plot_predicitive_uncertainty(
             c='g', label="Best fit - DREAM")       
 
 
-    ax.set_ylabel(r"Modeled $\Delta$SOC (g m$^{-2}$)")
+    ax.set_ylabel(r"Stream Discharge (m$^{3}/s$)")
     ax.set_xlabel("Simulations")
     ax.tick_params(axis='x', which='major', labelsize=8)
     plt.xticks(rotation=90)
@@ -869,3 +889,96 @@ def pick_random_par_sets(result_df, nFinalSets=168):
     pick_df.drop("chain", axis=1, inplace=True)
     pick_df.to_csv("ensemble_pars_sims.csv", index=False)
     return pick_df
+
+
+def plot_fast_sensitivity(
+    results, like_index=1, number_of_sensitiv_pars=10, fig_name="FAST_sensitivity.png"
+):
+    """
+    Example, how to plot the sensitivity for every parameter of your result array, created with the FAST algorithm
+
+    :results: Expects an numpy array which should have an header defined with the keyword like.
+    :type: array
+
+    :like: Default 'like1', Collum of which the sensitivity indices will be estimated on
+    :type: list
+
+    :number_of_sensitiv_pars: Optional, this number of most sensitive parameters will be shown in the legend
+    :type: int
+
+    :return: Parameter names which are sensitive, Sensitivity indices for every parameter, Parameter names which are not sensitive
+    :rtype: Three lists
+    """
+
+    import matplotlib.pyplot as plt
+
+    parnames = get_parameternames(results)
+    fig = plt.figure(figsize=(9, 6))
+
+    ax = plt.subplot(1, 1, 1)
+    Si = get_sensitivity_of_fast(results, like_index=like_index)
+
+    names = []
+    values = []
+    no_names = []
+    no_values = []
+    index = []
+    no_index = []
+
+    try:
+        threshold = np.sort(list(Si.values())[1])[-number_of_sensitiv_pars]
+    except IndexError:
+        threshold = 0
+    first_sens_call = True
+    first_insens_call = True
+    try:
+        Si.values()
+    except AttributeError:
+        exit("Our SI is wrong: " + str(Si))
+    for j in range(len(list(Si.values())[1])):
+        if list(Si.values())[1][j] >= threshold:
+            names.append(j)
+            values.append(list(Si.values())[1][j])
+            index.append(j)
+            if first_sens_call:
+                ax.bar(
+                    j,
+                    list(Si.values())[1][j],
+                    color="blue",
+                    label="Sensitive Parameters",
+                )
+            else:
+                ax.bar(j, list(Si.values())[1][j], color="blue")
+            first_sens_call = False
+        else:
+            # names.append('')
+            no_values.append(list(Si.values())[1][j])
+            no_index.append(j)
+            if first_insens_call:
+                ax.bar(
+                    j,
+                    list(Si.values())[1][j],
+                    color="orange",
+                    label="Insensitive parameter",
+                )
+            else:
+                ax.bar(j, list(Si.values())[1][j], color="orange")
+            first_insens_call = False
+    ax.set_ylim([0, 1])
+
+    ax.set_xlabel("Model Paramters")
+    ax.set_ylabel("Total Sensititivity Index")
+    ax.legend()
+    ax.set_xticks(np.arange(0, len(parnames)))
+    xtickNames = ax.set_xticklabels(parnames, color="grey")
+
+    plt.setp(xtickNames, rotation=90)
+    for name_id in names:
+        ax.get_xticklabels()[name_id].set_color("black")
+    # ax.set_xticklabels(['0']+parnames)
+    ax.plot(
+        np.arange(-1, len(parnames) + 1, 1), [threshold] * (len(parnames) + 2), "r--"
+    )
+    ax.set_xlim(-0.5, len(parnames) - 0.5)
+    plt.tight_layout()
+    fig.savefig(fig_name, dpi=150)
